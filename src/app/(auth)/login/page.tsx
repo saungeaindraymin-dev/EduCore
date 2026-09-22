@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginInput } from "@/lib/validators/auth";
+import { authApi } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/client";
+import { useAuthStore, dashboardPathFor } from "@/stores/useAuthStore";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +16,10 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const setSession = useAuthStore((s) => s.setSession);
   const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
@@ -26,8 +33,16 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: LoginInput) => {
-    // TODO: call your auth API
-    console.log("login", data);
+    setServerError(null);
+    try {
+      const { token, user } = await authApi.login(data.email, data.password);
+      setSession({ token, user });
+      router.replace(dashboardPathFor(user.role));
+    } catch (err) {
+      setServerError(
+        err instanceof ApiError ? err.message : "Something went wrong",
+      );
+    }
   };
 
   return (
@@ -40,6 +55,12 @@ export default function LoginPage() {
       </header>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+        {serverError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {serverError}
+          </div>
+        )}
+
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input

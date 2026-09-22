@@ -4,6 +4,8 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { authApi } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/client";
 
 const LENGTH = 6;
 const RESEND_SECONDS = 30;
@@ -74,21 +76,28 @@ function VerifyOtpInner() {
     e.preventDefault();
     if (!complete) return;
     setSubmitting(true);
-    // TODO: verify code with API
-    console.log("verify", code);
-    setTimeout(() => {
-      setSubmitting(false);
+    setError(null);
+    try {
+      await authApi.verifyOtp(email, code);
+      // pass the verified code forward as a one-time reset token
       router.push(
-        `/change-password?email=${encodeURIComponent(email)}&token=demo`,
+        `/change-password?email=${encodeURIComponent(email)}&code=${code}`,
       );
-    }, 700);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Verification failed");
+    } finally {
+      setSubmitting(false);
+    }
   };
-
-  const resend = () => {
+  
+  const resend = async () => {
     if (cooldown > 0) return;
-    // TODO: call resend API
-    console.log("resend to", email);
-    setCooldown(RESEND_SECONDS);
+    try {
+      await authApi.forgotPassword(email);
+      setCooldown(RESEND_SECONDS);
+    } catch {
+      setError("Could not resend code");
+    }
   };
 
   return (

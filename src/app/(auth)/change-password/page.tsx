@@ -13,11 +13,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSearchParams } from "next/navigation";
+import { authApi } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/client";
 
 function ChangePasswordInner() {
   const router = useRouter();
   const [showPw, setShowPw] = useState(false);
   const [success, setSuccess] = useState(false);
+  const params = useSearchParams();
+  const email = params.get("email") ?? "";
+  const code = params.get("code") ?? "";
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
@@ -40,9 +47,16 @@ function ChangePasswordInner() {
   const strength = rules.filter((r) => r.ok).length;
 
   const onSubmit = async (data: ChangePasswordInput) => {
-    console.log("change password", data);
-    setSuccess(true);
-    setTimeout(() => router.push("/login"), 1200);
+    setServerError(null);
+    try {
+      await authApi.resetPassword(email, code, data.password);
+      setSuccess(true);
+      setTimeout(() => router.push("/login"), 1200);
+    } catch (err) {
+      setServerError(
+        err instanceof ApiError ? err.message : "Could not update password",
+      );
+    }
   };
 
   if (success) {

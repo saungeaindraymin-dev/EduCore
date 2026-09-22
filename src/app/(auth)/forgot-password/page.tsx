@@ -13,10 +13,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { authApi } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/client";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
   const [sent, setSent] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
@@ -29,14 +32,19 @@ export default function ForgotPasswordPage() {
   });
 
   const onSubmit = async (data: ForgotPasswordInput) => {
-    // TODO: call your API to send OTP
-    console.log("send reset code to", data.email);
-    setSent(true);
-    setTimeout(() => {
-      router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
-    }, 900);
+    setServerError(null);
+    try {
+      await authApi.forgotPassword(data.email);
+      setSent(true);
+      setTimeout(() => {
+        router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
+      }, 900);
+    } catch (err) {
+      setServerError(
+        err instanceof ApiError ? err.message : "Could not send code",
+      );
+    }
   };
-
   return (
     <div>
       <header className="mb-8">
