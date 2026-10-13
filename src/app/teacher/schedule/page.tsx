@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ClassDetailsDialog } from "@/components/ClassDetailsDialog";
+import { SkeletonItems, SkeletonText } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { coursesApi } from "@/lib/api/courses";
 import { scheduleApi, type ScheduleEvent } from "@/lib/api/schedule";
@@ -122,7 +123,7 @@ export default function TeacherSchedulePage() {
           </select>
           <span className="text-sm text-sub">
             {isLoading && !data
-              ? "Loading…"
+              ? <SkeletonText className="w-24" />
               : `${classCount(events.length)}${
                   events.length ? ` · ${totalHours(events)}` : ""
                 }`}
@@ -182,9 +183,7 @@ export default function TeacherSchedulePage() {
 
               <ul className="flex-1 space-y-2 p-2">
                 {isLoading && !data && (
-                  <li>
-                    <div className="h-16 animate-pulse rounded-xl bg-field" />
-                  </li>
+                  <SkeletonItems rows={1} className="h-16 rounded-xl" />
                 )}
 
                 {dayEvents.map((e) => {

@@ -6,6 +6,7 @@ import { Pagination } from "@/components/Pagination";
 import { EnrollmentFormModal } from "../_components/EnrollmentFormModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { SkeletonRows, SkeletonText } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { ApiError } from "@/lib/api/client";
@@ -170,7 +171,7 @@ export default function EnrollmentsPage() {
             ))}
           </select>
           <span className="ml-auto text-sm text-sub">
-            {isLoading && !data ? "Loading…" : `${total} enrollments`}
+            {isLoading && !data ? <SkeletonText className="w-24" /> : `${total} enrollments`}
           </span>
         </div>
 
@@ -218,15 +219,7 @@ export default function EnrollmentsPage() {
                 isLoading && data ? "opacity-60" : ""
               }`}
             >
-              {isLoading &&
-                !data &&
-                Array.from({ length: 5 }, (_, i) => (
-                  <tr key={`skeleton-${i}`}>
-                    <td colSpan={5} className="px-6 py-4">
-                      <div className="h-9 animate-pulse rounded-lg bg-field" />
-                    </td>
-                  </tr>
-                ))}
+              {isLoading && !data && <SkeletonRows rows={5} columns={5} />}
 
               {rows.map((e) => {
                 const quick = QUICK_ACTION[e.status];

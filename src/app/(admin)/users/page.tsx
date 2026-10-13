@@ -6,6 +6,7 @@ import { Pagination } from "@/components/Pagination";
 import { UserFormModal } from "../_components/UserFormModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { SkeletonRows, SkeletonText } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import type { Role } from "@/lib/api/auth";
@@ -129,7 +130,7 @@ export default function UsersPage() {
             <option value="inactive">Inactive</option>
           </select>
           <span className="ml-auto text-sm text-sub">
-            {isLoading && !data ? "Loading…" : `${total} users`}
+            {isLoading && !data ? <SkeletonText className="w-24" /> : `${total} users`}
           </span>
         </div>
 
@@ -166,15 +167,7 @@ export default function UsersPage() {
                 isLoading && data ? "opacity-60" : ""
               }`}
             >
-              {isLoading &&
-                !data &&
-                Array.from({ length: 5 }, (_, i) => (
-                  <tr key={`skeleton-${i}`}>
-                    <td colSpan={5} className="px-6 py-4">
-                      <div className="h-9 animate-pulse rounded-lg bg-field" />
-                    </td>
-                  </tr>
-                ))}
+              {isLoading && !data && <SkeletonRows rows={5} columns={5} />}
 
               {rows.map((u) => (
                 <tr key={u.id} className="hover:bg-field/50">

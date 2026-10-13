@@ -5,6 +5,7 @@ import { useState } from "react";
 import { StatCard } from "@/components/StatCard";
 import { StatusPill } from "@/components/StatusPill";
 import { NavIcon } from "@/components/shell/NavIcon";
+import { SkeletonStack } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import {
   AUDIENCE_LABELS,
@@ -78,7 +79,10 @@ export default function TeacherDashboardPage() {
   const statValue = (
     query: { data?: unknown; error?: string },
     value: string | number,
-  ) => (query.data ? value : query.error ? "—" : "…");
+  ) => (query.data ? value : "—");
+  /** Still in flight — the card shows a placeholder rather than a stand-in number */
+  const statLoading = (query: { data?: unknown; error?: string }) =>
+    !query.data && !query.error;
 
   const firstName = user?.name.split(" ")[0] ?? "there";
 
@@ -98,21 +102,25 @@ export default function TeacherDashboardPage() {
         <StatCard
           label="My courses"
           value={statValue(courses, myCourses.length)}
+          loading={statLoading(courses)}
           icon={<NavIcon name="book" />}
         />
         <StatCard
           label="Active enrollments"
           value={statValue(courses, activeEnrollments)}
+          loading={statLoading(courses)}
           icon={<NavIcon name="user-group" />}
         />
         <StatCard
           label="Classes this week"
           value={statValue(schedule, classesThisWeek)}
+          loading={statLoading(schedule)}
           icon={<NavIcon name="calendar" />}
         />
         <StatCard
           label="Next class"
           value={statValue(schedule, nextClassLabel)}
+          loading={statLoading(schedule)}
           icon={<NavIcon name="clock" />}
         />
       </section>
@@ -370,11 +378,7 @@ function PanelState({
   }
   if (loading) {
     return (
-      <div className="space-y-3">
-        {Array.from({ length: 3 }, (_, i) => (
-          <div key={i} className="h-12 animate-pulse rounded-lg bg-field" />
-        ))}
-      </div>
+      <SkeletonStack rows={3} className="space-y-3" rowClassName="h-12 rounded-lg" />
     );
   }
   if (empty) {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { StatCard } from "@/components/StatCard";
 import { NavIcon } from "@/components/shell/NavIcon";
+import { SkeletonItems, SkeletonText } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { assignmentsApi, type Assignment } from "@/lib/api/assignments";
@@ -52,8 +53,21 @@ export default function StudentAssignmentsPage() {
   );
 
   const all = data?.data ?? [];
+
+  // Their own hand-ins, so each card can say "Handed in" or show the mark
+  const mine = useApiQuery("student-assignments:mine", () =>
+    assignmentsApi.mySubmissions({ limit: 100 }),
+  );
+  const mineByAssignment = new Map(
+    (mine.data?.data ?? []).map((work) => [work.assignment.id, work]),
+  );
+  // Overdue only counts work they haven't handed in
   const overdue = all.filter(
-    (a) => a.status === "published" && !!a.dueAt && new Date(a.dueAt) < now,
+    (a) =>
+      a.status === "published" &&
+      !!a.dueAt &&
+      new Date(a.dueAt) < now &&
+      !mineByAssignment.has(a.id),
   );
   const openWork = all.filter((a) => a.status === "published");
   const rows =
@@ -77,17 +91,20 @@ export default function StudentAssignmentsPage() {
       <section className="grid gap-6 sm:grid-cols-3">
         <StatCard
           label="Open"
-          value={data ? openWork.length : "…"}
+          value={data ? openWork.length : "—"}
+          loading={isLoading && !data}
           icon={<NavIcon name="clipboard-check" />}
         />
         <StatCard
           label="Due this week"
-          value={data ? dueThisWeek : "…"}
+          value={data ? dueThisWeek : "—"}
+          loading={isLoading && !data}
           icon={<NavIcon name="clock" />}
         />
         <StatCard
           label="Overdue"
-          value={data ? overdue.length : "…"}
+          value={data ? overdue.length : "—"}
+          loading={isLoading && !data}
           icon={<NavIcon name="megaphone" />}
         />
       </section>
@@ -125,7 +142,7 @@ export default function StudentAssignmentsPage() {
           <option value="all">Everything</option>
         </select>
         <span className="ml-auto text-sm text-sub">
-          {isLoading && !data ? "Loading…" : plural(rows.length, "assignment")}
+          {isLoading && !data ? <SkeletonText className="w-24" /> : plural(rows.length, "assignment")}
         </span>
       </div>
 
@@ -144,18 +161,12 @@ export default function StudentAssignmentsPage() {
       <ul
         className={`space-y-4 transition-opacity ${isLoading && data ? "opacity-60" : ""}`}
       >
-        {isLoading &&
-          !data &&
-          Array.from({ length: 3 }, (_, i) => (
-            <li
-              key={`skeleton-${i}`}
-              className="h-28 animate-pulse rounded-2xl border border-border-soft bg-surface"
-            />
-          ))}
+        {isLoading && !data && <SkeletonItems rows={3} className="h-28 rounded-2xl" />}
 
         {rows.map((a) => {
+          const work = mineByAssignment.get(a.id);
           const isOverdue =
-            a.status === "published" && !!a.dueAt && new Date(a.dueAt) < now;
+            !work && a.status === "published" && !!a.dueAt && new Date(a.dueAt) < now;
           return (
             <li key={a.id}>
               <Link
@@ -178,13 +189,22 @@ export default function StudentAssignmentsPage() {
                     </p>
                   )}
                 </div>
-                <span
-                  className={`shrink-0 text-right text-xs font-medium ${
-                    isOverdue ? "text-danger" : "text-sub"
-                  }`}
-                >
-                  {dueLabel(a, now)}
-                </span>
+                <div className="shrink-0 space-y-1 text-right">
+                  {work?.gradedAt ? (
+                    <span className="inline-block rounded-full bg-success-bg px-2.5 py-0.5 text-xs font-semibold text-success">
+                      Marked {work.score}/{a.totalPoints}
+                    </span>
+                  ) : work ? (
+                    <span className="inline-block rounded-full bg-info-bg px-2.5 py-0.5 text-xs font-semibold text-info">
+                      Handed in
+                    </span>
+                  ) : null}
+                  <p
+                    className={`text-xs font-medium ${isOverdue ? "text-danger" : "text-sub"}`}
+                  >
+                    {dueLabel(a, now)}
+                  </p>
+                </div>
               </Link>
             </li>
           );

@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiError } from "@/lib/api/client";
 import { lessonsApi, type Lesson } from "@/lib/api/lessons";
+import { videoEmbedUrl, videoHost } from "@/lib/video";
 
 const CONTENT_MAX = 50_000;
 
@@ -26,6 +27,13 @@ const schema = z.object({
   content: z
     .string()
     .max(CONTENT_MAX, `Keep it under ${CONTENT_MAX.toLocaleString()} characters`),
+  videoUrl: z
+    .string()
+    .trim()
+    .max(500, "Keep the link under 500 characters")
+    .refine((value) => value === "" || /^https?:\/\/\S+$/i.test(value), {
+      message: "Paste the full link, starting with https://",
+    }),
   published: z.boolean(),
 });
 type Values = z.infer<typeof schema>;
@@ -56,10 +64,14 @@ export function LessonFormModal({
     defaultValues: {
       title: lesson?.title ?? "",
       content: lesson?.content ?? "",
+      videoUrl: lesson?.videoUrl ?? "",
       published: lesson?.published ?? false,
     },
   });
   const content = useWatch({ control, name: "content" });
+  const videoUrl = useWatch({ control, name: "videoUrl" });
+  const trimmedVideo = (videoUrl ?? "").trim();
+  const plays = trimmedVideo ? videoEmbedUrl(trimmedVideo) !== null : false;
 
   const handleOpenChange = (next: boolean) => {
     if (!next) setServerError(null);
@@ -69,9 +81,11 @@ export function LessonFormModal({
   const submit = async (values: Values) => {
     setServerError(null);
     try {
+      // An empty link clears the video
+      const payload = { ...values, videoUrl: values.videoUrl || null };
       const { data } = lesson
-        ? await lessonsApi.update(courseId, lesson.id, values)
-        : await lessonsApi.create(courseId, values);
+        ? await lessonsApi.update(courseId, lesson.id, payload)
+        : await lessonsApi.create(courseId, payload);
       onSaved(data);
       handleOpenChange(false);
     } catch (err) {
@@ -107,6 +121,33 @@ export function LessonFormModal({
             <Label htmlFor="lesson-title">Title</Label>
             <Input id="lesson-title" {...register("title")} placeholder="Chapter 1: Linear equations" />
             {errors.title && <p className="text-sm text-danger">{errors.title.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="lesson-video">
+              Video link <span className="font-normal text-sub">(optional)</span>
+            </Label>
+            <Input
+              id="lesson-video"
+              type="url"
+              inputMode="url"
+              {...register("videoUrl")}
+              aria-invalid={!!errors.videoUrl}
+              placeholder="https://www.youtube.com/watch?v=…"
+            />
+            {errors.videoUrl ? (
+              <p className="text-sm text-danger">{errors.videoUrl.message}</p>
+            ) : trimmedVideo ? (
+              <p className="text-xs text-sub">
+                {plays
+                  ? `${videoHost(trimmedVideo)} — it will play inside the lesson.`
+                  : `${videoHost(trimmedVideo)} — students will open it in a new tab.`}
+              </p>
+            ) : (
+              <p className="text-xs text-sub">
+                YouTube and Vimeo play inside the lesson; other links open in a new tab.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">

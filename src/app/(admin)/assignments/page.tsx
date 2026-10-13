@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { SubmissionsDialog } from "@/components/SubmissionsDialog";
 import { Pagination } from "@/components/Pagination";
 import { StatusPill } from "@/components/StatusPill";
+import { SkeletonRows, SkeletonText } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
@@ -42,6 +44,7 @@ export default function AdminAssignmentsPage() {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Assignment | null>(null);
+  const [viewing, setViewing] = useState<Assignment | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [now] = useState(() => new Date());
@@ -159,7 +162,7 @@ export default function AdminAssignmentsPage() {
           </select>
           <span className="ml-auto text-sm text-sub">
             {isLoading && !data
-              ? "Loading…"
+              ? <SkeletonText className="w-24" />
               : `${total} assignment${total === 1 ? "" : "s"}`}
           </span>
         </div>
@@ -188,6 +191,7 @@ export default function AdminAssignmentsPage() {
                 <th className="px-6 py-3">Course</th>
                 <th className="px-6 py-3">Set by</th>
                 <th className="px-6 py-3">Due</th>
+                <th className="px-6 py-3">Handed in</th>
                 <th className="px-6 py-3">Status</th>
                 <th className="px-6 py-3 text-right">Actions</th>
               </tr>
@@ -197,15 +201,7 @@ export default function AdminAssignmentsPage() {
                 isLoading && data ? "opacity-60" : ""
               }`}
             >
-              {isLoading &&
-                !data &&
-                Array.from({ length: 5 }, (_, i) => (
-                  <tr key={`skeleton-${i}`}>
-                    <td colSpan={6} className="px-6 py-4">
-                      <div className="h-9 animate-pulse rounded-lg bg-field" />
-                    </td>
-                  </tr>
-                ))}
+              {isLoading && !data && <SkeletonRows rows={5} columns={7} />}
 
               {rows.map((a) => {
                 const action = STATUS_ACTION[a.status];
@@ -236,10 +232,41 @@ export default function AdminAssignmentsPage() {
                         <span className="text-sub">No deadline</span>
                       )}
                     </td>
+                    <td className="whitespace-nowrap px-6 py-4">
+                      <button
+                        type="button"
+                        onClick={() => setViewing(a)}
+                        className="group text-left"
+                        aria-label={`See who handed in ${a.title}`}
+                      >
+                        <span className="font-semibold text-ink group-hover:text-brand-indigo">
+                          {a.submissions ?? 0}
+                        </span>
+                        <span className="text-sub"> / {a.enrolled ?? 0}</span>
+                        <div className="mt-1 h-1.5 w-20 overflow-hidden rounded-full bg-field">
+                          <div
+                            className="bg-brand-gradient h-full rounded-full"
+                            style={{
+                              width: `${
+                                a.enrolled ? Math.min(100, ((a.submissions ?? 0) / a.enrolled) * 100) : 0
+                              }%`,
+                            }}
+                          />
+                        </div>
+                      </button>
+                    </td>
                     <td className="px-6 py-4">
                       <StatusPill status={a.status} />
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right">
+                      <button
+                        type="button"
+                        onClick={() => setViewing(a)}
+                        className="text-sm font-medium text-brand-indigo hover:underline"
+                      >
+                        Submissions
+                      </button>
+                      <span className="mx-2 text-border-soft">|</span>
                       <button
                         type="button"
                         onClick={() => changeStatus(a, action.next)}
@@ -279,7 +306,7 @@ export default function AdminAssignmentsPage() {
 
               {!isLoading && !error && rows.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-sub">
+                  <td colSpan={7} className="px-6 py-10 text-center text-sm text-sub">
                     No assignments match your filters.
                   </td>
                 </tr>
@@ -290,6 +317,13 @@ export default function AdminAssignmentsPage() {
 
         <Pagination page={page} pageCount={pageCount} onChange={setPage} />
       </div>
+
+      {/* Read-only for admins: only the course's teacher marks work */}
+      <SubmissionsDialog
+        assignment={viewing}
+        onClose={() => setViewing(null)}
+        canMark={false}
+      />
 
       <ConfirmDialog
         open={deleteOpen}

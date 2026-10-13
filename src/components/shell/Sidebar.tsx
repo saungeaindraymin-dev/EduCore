@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { SkeletonStack } from "@/components/Skeleton";
 import type { NavItem } from "@/lib/api/access";
 import { initials } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -92,14 +93,9 @@ export function Sidebar({
             Menu
           </p>
 
-          {status === "loading" &&
-            items.length === 0 &&
-            Array.from({ length: 5 }, (_, i) => (
-              <div
-                key={`nav-skeleton-${i}`}
-                className="h-10 animate-pulse rounded-lg bg-field"
-              />
-            ))}
+          {status === "loading" && items.length === 0 && (
+            <SkeletonStack rows={5} className="space-y-1" rowClassName="h-10" />
+          )}
 
           {status === "error" && items.length === 0 && (
             <div

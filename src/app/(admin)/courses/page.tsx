@@ -6,6 +6,7 @@ import { Pagination } from "@/components/Pagination";
 import { CourseFormModal } from "@/components/CourseFormModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
+import { SkeletonRows, SkeletonText } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
@@ -132,7 +133,7 @@ export default function CoursesPage() {
             ))}
           </select>
           <span className="ml-auto text-sm text-sub">
-            {isLoading && !data ? "Loading…" : `${total} courses`}
+            {isLoading && !data ? <SkeletonText className="w-24" /> : `${total} courses`}
           </span>
         </div>
 
@@ -169,15 +170,7 @@ export default function CoursesPage() {
                 isLoading && data ? "opacity-60" : ""
               }`}
             >
-              {isLoading &&
-                !data &&
-                Array.from({ length: 5 }, (_, i) => (
-                  <tr key={`skeleton-${i}`}>
-                    <td colSpan={6} className="px-6 py-4">
-                      <div className="h-9 animate-pulse rounded-lg bg-field" />
-                    </td>
-                  </tr>
-                ))}
+              {isLoading && !data && <SkeletonRows rows={5} columns={6} />}
 
               {rows.map((c) => (
                 <tr key={c.id} className="hover:bg-field/50">

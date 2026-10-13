@@ -1,4 +1,4 @@
-import { api, toQueryString, type Paginated } from "./client";
+import { api, downloadFile, toQueryString, type Paginated } from "./client";
 
 export const ASSIGNMENT_STATUSES = ["draft", "published", "closed"] as const;
 export type AssignmentStatus = (typeof ASSIGNMENT_STATUSES)[number];
@@ -14,6 +14,9 @@ export type Assignment = {
   createdBy: { id: string; name: string } | null; // the teacher who set it
   createdAt: string;
   updatedAt: string;
+  // Staff only — the API leaves these out for students
+  submissions?: number; // handed in
+  enrolled?: number; // active students on the course
 };
 
 export type ListAssignmentsParams = {
@@ -37,17 +40,43 @@ export type CreateAssignmentInput = {
 
 export type UpdateAssignmentInput = Partial<CreateAssignmentInput>;
 
+export type SubmissionFile = {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  size: number; // bytes
+  uploadedAt: string;
+};
+
+// What a student may attach — mirrors the API's allow-list
+export const SUBMISSION_FILE_TYPES =
+  ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv,.zip,.png,.jpg,.jpeg,.gif,.webp";
+export const MAX_SUBMISSION_FILES = 5;
+export const MAX_SUBMISSION_FILE_BYTES = 10 * 1024 * 1024;
+
 export type Submission = {
   id: string;
   assignmentId: string;
   student: { id: string; name: string; email: string };
-  content: string;
+  content: string; // may be empty when the work is all in files
+  files: SubmissionFile[];
   score: number | null; // null until the teacher marks it
   feedback: string | null;
   submittedAt: string;
   gradedAt: string | null;
   gradedBy: { id: string; name: string } | null;
   isLate: boolean;
+};
+
+/** A student's own submission, with the assignment it belongs to */
+export type MySubmission = Submission & {
+  assignment: {
+    id: string;
+    title: string;
+    totalPoints: number;
+    dueAt: string | null;
+    course: { id: string; title: string; code: string };
+  };
 };
 
 export type SubmissionList = {
@@ -85,12 +114,34 @@ export const assignmentsApi = {
 
   remove: (id: string) => api<null>(`/assignments/${id}`, { method: "DELETE" }),
 
-  // Students only: handing work in again replaces what they had, until it's marked
-  submit: (assignmentId: string, content: string) =>
-    api<{ data: Submission }>(`/assignments/${assignmentId}/submissions`, {
+  // Students only. Each hand-in describes the whole submission: files not listed in
+  // `keepFileIds` are removed. Allowed until the work is marked.
+  submit: (
+    assignmentId: string,
+    input: { content: string; files?: File[]; keepFileIds?: string[] },
+  ) => {
+    const form = new FormData();
+    form.set("content", input.content);
+    form.set("keepFileIds", JSON.stringify(input.keepFileIds ?? []));
+    for (const file of input.files ?? []) form.append("files", file);
+    return api<{ data: Submission }>(`/assignments/${assignmentId}/submissions`, {
       method: "POST",
-      body: { content },
-    }),
+      body: form,
+    });
+  },
+
+  // Students only: their own work. `graded` narrows to marked (true) or waiting (false).
+  mySubmissions: (params: { graded?: boolean; limit?: number } = {}) =>
+    api<{ data: MySubmission[] }>(
+      `/submissions/mine${toQueryString({
+        graded: params.graded === undefined ? undefined : String(params.graded),
+        limit: params.limit,
+      })}`,
+    ),
+
+  // The student who handed it in, the course's teacher and admins may download it
+  downloadFile: (submissionId: string, file: SubmissionFile) =>
+    downloadFile(`/submissions/${submissionId}/files/${file.id}`, file.fileName),
 
   // Teachers and admins get the class; a student gets only their own
   submissions: (assignmentId: string) =>

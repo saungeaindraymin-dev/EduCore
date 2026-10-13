@@ -9,23 +9,34 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SubmissionFileList } from "@/components/SubmissionFileList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SkeletonItems } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
-import { assignmentsApi, type Assignment, type Submission } from "@/lib/api/assignments";
+import {
+  assignmentsApi,
+  type Assignment,
+  type Submission,
+} from "@/lib/api/assignments";
 import { ApiError } from "@/lib/api/client";
 import { formatDateTime } from "@/lib/dates";
 import { initials } from "@/lib/utils";
 
-/** What the class handed in, and where the teacher marks it. */
+/**
+ * What the class handed in. The course's teacher marks it here; an admin gets the same view
+ * read-only (`canMark={false}`) — the API refuses an admin's mark anyway.
+ */
 export function SubmissionsDialog({
   assignment,
   onClose,
   onGraded,
+  canMark = true,
 }: {
   assignment: Assignment | null;
   onClose: () => void;
   onGraded?: () => void;
+  canMark?: boolean;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [score, setScore] = useState("");
@@ -33,8 +44,15 @@ export function SubmissionsDialog({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const key = assignment ? `teacher-submissions:${assignment.id}` : "teacher-submissions:none";
-  const { data, error: loadError, isLoading, reload } = useApiQuery(key, () =>
+  const key = assignment
+    ? `teacher-submissions:${assignment.id}`
+    : "teacher-submissions:none";
+  const {
+    data,
+    error: loadError,
+    isLoading,
+    reload,
+  } = useApiQuery(key, () =>
     assignment
       ? assignmentsApi.submissions(assignment.id)
       : Promise.resolve(null as never),
@@ -67,7 +85,9 @@ export function SubmissionsDialog({
       reload();
       onGraded?.();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not save the mark");
+      setError(
+        err instanceof ApiError ? err.message : "Could not save the mark",
+      );
     } finally {
       setSaving(false);
     }
@@ -79,9 +99,12 @@ export function SubmissionsDialog({
         {assignment && (
           <>
             <DialogHeader>
-              <DialogTitle className="font-heading text-xl">{assignment.title}</DialogTitle>
+              <DialogTitle className="font-heading text-xl">
+                {assignment.title}
+              </DialogTitle>
               <DialogDescription>
-                {assignment.course.code} · out of {assignment.totalPoints} points
+                {assignment.course.code} · out of {assignment.totalPoints}{" "}
+                points
               </DialogDescription>
             </DialogHeader>
 
@@ -89,10 +112,7 @@ export function SubmissionsDialog({
               <dl className="grid grid-cols-2 gap-3 rounded-xl border border-border-soft bg-field/60 p-3 text-sm sm:grid-cols-4">
                 <Stat label="Handed in" value={meta.submissions} />
                 <Stat label="To mark" value={meta.awaitingMarking} />
-                <Stat
-                  label="Not handed in"
-                  value={meta.notSubmitted ?? "—"}
-                />
+                <Stat label="Not handed in" value={meta.notSubmitted ?? "—"} />
                 <Stat
                   label="Average"
                   value={
@@ -110,20 +130,24 @@ export function SubmissionsDialog({
                 className="flex items-center justify-between gap-3 rounded-lg border border-danger/30 bg-danger-bg px-3 py-2 text-sm text-danger"
               >
                 <span>Couldn&apos;t load the submissions: {loadError}</span>
-                <button type="button" onClick={reload} className="font-medium underline">
+                <button
+                  type="button"
+                  onClick={reload}
+                  className="font-medium underline"
+                >
                   Retry
                 </button>
               </div>
             )}
 
             <ul className="max-h-96 divide-y divide-border-soft overflow-y-auto rounded-xl border border-border-soft">
-              {isLoading &&
-                !data &&
-                Array.from({ length: 3 }, (_, i) => (
-                  <li key={`skeleton-${i}`} className="p-4">
-                    <div className="h-10 animate-pulse rounded-lg bg-field" />
-                  </li>
-                ))}
+              {isLoading && !data && (
+                <SkeletonItems
+                  rows={3}
+                  itemClassName="p-4"
+                  className="h-10 rounded-lg"
+                />
+              )}
 
               {rows.map((submission) => {
                 const marking = openId === submission.id;
@@ -142,6 +166,8 @@ export function SubmissionsDialog({
                           {submission.isLate && (
                             <span className="text-warning"> · late</span>
                           )}
+                          {submission.files.length > 0 &&
+                            ` · ${submission.files.length} file${submission.files.length === 1 ? "" : "s"}`}
                         </p>
                       </div>
                       {submission.score !== null ? (
@@ -155,63 +181,100 @@ export function SubmissionsDialog({
                       )}
                       <button
                         type="button"
-                        onClick={() => (marking ? setOpenId(null) : openMarking(submission))}
+                        onClick={() =>
+                          marking ? setOpenId(null) : openMarking(submission)
+                        }
                         className="shrink-0 text-sm font-medium text-brand-indigo hover:underline"
                       >
-                        {marking ? "Close" : submission.score === null ? "Mark" : "Remark"}
+                        {marking
+                          ? canMark
+                            ? "Close"
+                            : "Hide"
+                          : !canMark
+                            ? "View"
+                            : submission.score === null
+                              ? "Mark"
+                              : "Remark"}
                       </button>
                     </div>
 
                     {marking && (
                       <div className="mt-3 space-y-3 rounded-xl bg-field/60 p-3">
-                        <p className="whitespace-pre-line text-sm leading-relaxed text-ink-soft">
-                          {submission.content}
-                        </p>
-                        {error && (
+                        {submission.content ? (
+                          <p className="whitespace-pre-line text-sm leading-relaxed text-ink-soft">
+                            {submission.content}
+                          </p>
+                        ) : (
+                          <p className="text-sm italic text-sub">No written answer — see the files.</p>
+                        )}
+                        <SubmissionFileList submissionId={submission.id} files={submission.files} />
+                        {!canMark && (
+                          <p className="border-t border-border-soft pt-2 text-sm text-sub">
+                            {submission.score === null ? (
+                              "Not marked yet."
+                            ) : (
+                              <>
+                                <span className="font-semibold text-ink">
+                                  {submission.score}/{assignment.totalPoints}
+                                </span>
+                                {submission.gradedBy
+                                  ? ` · marked by ${submission.gradedBy.name}`
+                                  : ""}
+                                {submission.feedback
+                                  ? ` — “${submission.feedback}”`
+                                  : ""}
+                              </>
+                            )}
+                          </p>
+                        )}
+                        {canMark && error && (
                           <p role="alert" className="text-sm text-danger">
                             {error}
                           </p>
                         )}
-                        <div className="flex flex-wrap items-end gap-3">
-                          <div className="w-28 space-y-1">
-                            <label
-                              htmlFor={`score-${submission.id}`}
-                              className="text-xs font-medium text-ink"
+                        {canMark && (
+                          <div className="flex flex-wrap items-end gap-3">
+                            <div className="w-28 space-y-1">
+                              <label
+                                htmlFor={`score-${submission.id}`}
+                                className="text-xs font-medium text-ink"
+                              >
+                                Score
+                              </label>
+                              <Input
+                                id={`score-${submission.id}`}
+                                type="number"
+                                min={0}
+                                max={assignment.totalPoints}
+                                value={score}
+                                onChange={(e) => setScore(e.target.value)}
+                              />
+                            </div>
+                            <div className="min-w-48 flex-1 space-y-1">
+                              <label
+                                htmlFor={`feedback-${submission.id}`}
+                                className="text-xs font-medium text-ink"
+                              >
+                                Feedback{" "}
+                                <span className="text-sub">(optional)</span>
+                              </label>
+                              <Input
+                                id={`feedback-${submission.id}`}
+                                value={feedback}
+                                onChange={(e) => setFeedback(e.target.value)}
+                                placeholder="What did they do well?"
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              onClick={() => mark(submission)}
+                              disabled={saving}
+                              className="bg-brand-gradient text-white hover:opacity-90"
                             >
-                              Score
-                            </label>
-                            <Input
-                              id={`score-${submission.id}`}
-                              type="number"
-                              min={0}
-                              max={assignment.totalPoints}
-                              value={score}
-                              onChange={(e) => setScore(e.target.value)}
-                            />
+                              {saving ? "Saving…" : "Save mark"}
+                            </Button>
                           </div>
-                          <div className="min-w-48 flex-1 space-y-1">
-                            <label
-                              htmlFor={`feedback-${submission.id}`}
-                              className="text-xs font-medium text-ink"
-                            >
-                              Feedback <span className="text-sub">(optional)</span>
-                            </label>
-                            <Input
-                              id={`feedback-${submission.id}`}
-                              value={feedback}
-                              onChange={(e) => setFeedback(e.target.value)}
-                              placeholder="What did they do well?"
-                            />
-                          </div>
-                          <Button
-                            type="button"
-                            onClick={() => mark(submission)}
-                            disabled={saving}
-                            className="bg-brand-gradient text-white hover:opacity-90"
-                          >
-                            {saving ? "Saving…" : "Save mark"}
-                          </Button>
-                        </div>
+                        )}
                       </div>
                     )}
                   </li>
@@ -244,8 +307,12 @@ export function SubmissionsDialog({
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wider text-sub">{label}</dt>
-      <dd className="font-heading mt-0.5 text-lg font-semibold text-ink">{value}</dd>
+      <dt className="text-xs font-medium uppercase tracking-wider text-sub">
+        {label}
+      </dt>
+      <dd className="font-heading mt-0.5 text-lg font-semibold text-ink">
+        {value}
+      </dd>
     </div>
   );
 }

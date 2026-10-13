@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Pagination } from "@/components/Pagination";
 import { StatusPill } from "@/components/StatusPill";
 import { Button } from "@/components/ui/button";
+import { SkeletonItems, SkeletonText } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { ApiError } from "@/lib/api/client";
@@ -151,7 +152,7 @@ export default function TeacherQuizzesPage() {
           ))}
         </select>
         <span className="ml-auto text-sm text-sub">
-          {isLoading && !data ? "Loading…" : plural(total, "quiz").replace("quizs", "quizzes")}
+          {isLoading && !data ? <SkeletonText className="w-24" /> : plural(total, "quiz").replace("quizs", "quizzes")}
         </span>
       </div>
 
@@ -174,14 +175,7 @@ export default function TeacherQuizzesPage() {
       <ul
         className={`space-y-4 transition-opacity ${isLoading && data ? "opacity-60" : ""}`}
       >
-        {isLoading &&
-          !data &&
-          Array.from({ length: 3 }, (_, i) => (
-            <li
-              key={`skeleton-${i}`}
-              className="h-32 animate-pulse rounded-2xl border border-border-soft bg-surface"
-            />
-          ))}
+        {isLoading && !data && <SkeletonItems rows={3} className="h-32 rounded-2xl" />}
 
         {rows.map((quiz) => {
           const busy = busyId === quiz.id;

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { StudentDetailsDialog } from "../_components/StudentDetailsDialog";
 import { Pagination } from "@/components/Pagination";
+import { SkeletonRows, SkeletonText } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { coursesApi } from "@/lib/api/courses";
@@ -113,7 +114,7 @@ export default function TeacherStudentsPage() {
             ))}
           </select>
           <span className="ml-auto text-sm text-sub">
-            {isLoading && !data ? "Loading…" : plural(total, "student")}
+            {isLoading && !data ? <SkeletonText className="w-24" /> : plural(total, "student")}
           </span>
         </div>
 
@@ -144,15 +145,7 @@ export default function TeacherStudentsPage() {
                 isLoading && data ? "opacity-60" : ""
               }`}
             >
-              {isLoading &&
-                !data &&
-                Array.from({ length: 5 }, (_, i) => (
-                  <tr key={`skeleton-${i}`}>
-                    <td colSpan={4} className="px-6 py-4">
-                      <div className="h-9 animate-pulse rounded-lg bg-field" />
-                    </td>
-                  </tr>
-                ))}
+              {isLoading && !data && <SkeletonRows rows={5} columns={4} />}
 
               {rows.map((student) => {
                 const shown = student.courses.slice(0, MAX_COURSE_CHIPS);

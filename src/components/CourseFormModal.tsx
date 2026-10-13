@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SkeletonField } from "@/components/Skeleton";
 import { ApiError } from "@/lib/api/client";
 import {
   COURSE_CATEGORIES,
@@ -160,12 +161,11 @@ export function CourseFormModal({
     }
   };
 
+  const teachersLoading = loadStatus === "loading" && options.length === 0;
   const teacherPlaceholder =
-    loadStatus === "loading" && options.length === 0
-      ? "Loading teachers…"
-      : loadStatus === "ready" && options.length === 0
-        ? "No teachers available"
-        : "Select a teacher";
+    loadStatus === "ready" && options.length === 0
+      ? "No teachers available"
+      : "Select a teacher";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -225,20 +225,23 @@ export function CourseFormModal({
               {assignTeacher && (
                 <div className="space-y-2">
                   <Label htmlFor="teacherId">Assigned teacher</Label>
-                  <select
-                    id="teacherId"
-                    {...register("teacherId")}
-                    aria-invalid={!!errors.teacherId}
-                    aria-describedby={errors.teacherId ? "teacherId-error" : undefined}
-                    className={selectClass}
-                  >
-                    <option value="">{teacherPlaceholder}</option>
-                    {options.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.email ? `${t.name} (${t.email})` : t.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative" aria-busy={teachersLoading}>
+                    <select
+                      id="teacherId"
+                      {...register("teacherId")}
+                      aria-invalid={!!errors.teacherId}
+                      aria-describedby={errors.teacherId ? "teacherId-error" : undefined}
+                      className={selectClass}
+                    >
+                      <option value="">{teacherPlaceholder}</option>
+                      {options.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.email ? `${t.name} (${t.email})` : t.name}
+                        </option>
+                      ))}
+                    </select>
+                    {teachersLoading && <SkeletonField className="absolute inset-0" />}
+                  </div>
 
                   {loadStatus === "error" && (
                     <p role="alert" className="text-sm text-danger">

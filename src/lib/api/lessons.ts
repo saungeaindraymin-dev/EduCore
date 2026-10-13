@@ -5,6 +5,7 @@ export type Lesson = {
   courseId: string;
   title: string;
   content: string;
+  videoUrl: string | null; // a link out — YouTube and Vimeo play inside the lesson
   position: number;
   published: boolean;
   createdAt: string;
@@ -14,6 +15,7 @@ export type Lesson = {
 export type LessonInput = {
   title: string;
   content?: string;
+  videoUrl?: string | null; // "" or null clears it
   published?: boolean;
 };
 

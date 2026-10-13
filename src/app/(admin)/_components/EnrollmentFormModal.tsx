@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { SkeletonField } from "@/components/Skeleton";
 import { ApiError } from "@/lib/api/client";
 import { coursesApi, type Course } from "@/lib/api/courses";
 import {
@@ -134,17 +135,13 @@ export function EnrollmentFormModal({
   };
 
   const loading = loadStatus === "loading";
-  const studentPlaceholder = loading
-    ? "Loading students…"
-    : students.length
-      ? "Select a student"
-      : "No active students";
-  const coursePlaceholder =
-    loading && courseOptions.length === 0
-      ? "Loading courses…"
-      : courseOptions.length
-        ? "Select a course"
-        : "No courses available";
+  const coursesLoading = loading && courseOptions.length === 0;
+  const studentPlaceholder = students.length
+    ? "Select a student"
+    : "No active students";
+  const coursePlaceholder = courseOptions.length
+    ? "Select a course"
+    : "No courses available";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -199,19 +196,22 @@ export function EnrollmentFormModal({
           ) : (
             <div className="space-y-2">
               <Label htmlFor="studentId">Student</Label>
-              <select
-                id="studentId"
-                {...register("studentId")}
-                aria-invalid={!!errors.studentId}
-                className={selectClass}
-              >
-                <option value="">{studentPlaceholder}</option>
-                {students.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.email})
-                  </option>
-                ))}
-              </select>
+              <div className="relative" aria-busy={loading}>
+                <select
+                  id="studentId"
+                  {...register("studentId")}
+                  aria-invalid={!!errors.studentId}
+                  className={selectClass}
+                >
+                  <option value="">{studentPlaceholder}</option>
+                  {students.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.email})
+                    </option>
+                  ))}
+                </select>
+                {loading && <SkeletonField className="absolute inset-0" />}
+              </div>
               {loadStatus === "ready" && students.length === 0 && (
                 <p className="text-xs text-sub">
                   No active students yet. Add one from User Management first.
@@ -226,20 +226,23 @@ export function EnrollmentFormModal({
           <div className="grid gap-4 sm:grid-cols-[1fr_10rem]">
             <div className="space-y-2">
               <Label htmlFor="courseId">Course</Label>
-              <select
-                id="courseId"
-                {...register("courseId")}
-                aria-invalid={!!errors.courseId}
-                className={selectClass}
-              >
-                <option value="">{coursePlaceholder}</option>
-                {courseOptions.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title} — {c.code}
-                    {c.status !== "published" ? ` (${c.status})` : ""}
-                  </option>
-                ))}
-              </select>
+              <div className="relative" aria-busy={coursesLoading}>
+                <select
+                  id="courseId"
+                  {...register("courseId")}
+                  aria-invalid={!!errors.courseId}
+                  className={selectClass}
+                >
+                  <option value="">{coursePlaceholder}</option>
+                  {courseOptions.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title} — {c.code}
+                      {c.status !== "published" ? ` (${c.status})` : ""}
+                    </option>
+                  ))}
+                </select>
+                {coursesLoading && <SkeletonField className="absolute inset-0" />}
+              </div>
               {errors.courseId && (
                 <p className="text-sm text-danger">{errors.courseId.message}</p>
               )}

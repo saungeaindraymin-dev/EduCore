@@ -5,6 +5,7 @@ import { useState } from "react";
 import { StatCard } from "@/components/StatCard";
 import { StatusPill } from "@/components/StatusPill";
 import { NavIcon } from "@/components/shell/NavIcon";
+import { SkeletonItems, SkeletonText } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { enrollmentsApi } from "@/lib/api/enrollments";
@@ -71,17 +72,20 @@ export default function StudentQuizzesPage() {
       <section className="grid gap-6 sm:grid-cols-3">
         <StatCard
           label="To sit"
-          value={data ? toSit.length : "…"}
+          value={data ? toSit.length : "—"}
+          loading={isLoading && !data}
           icon={<NavIcon name="check-badge" />}
         />
         <StatCard
           label="Completed"
-          value={data ? sat.length : "…"}
+          value={data ? sat.length : "—"}
+          loading={isLoading && !data}
           icon={<NavIcon name="clipboard-check" />}
         />
         <StatCard
           label="Average score"
-          value={data ? (averageBest === null ? "—" : `${averageBest}%`) : "…"}
+          value={data ? (averageBest === null ? "—" : `${averageBest}%`) : "—"}
+          loading={isLoading && !data}
           icon={<NavIcon name="grid" />}
         />
       </section>
@@ -120,7 +124,7 @@ export default function StudentQuizzesPage() {
         </select>
         <span className="ml-auto text-sm text-sub">
           {isLoading && !data
-            ? "Loading…"
+            ? <SkeletonText className="w-24" />
             : `${rows.length} ${rows.length === 1 ? "quiz" : "quizzes"}`}
         </span>
       </div>
@@ -140,14 +144,7 @@ export default function StudentQuizzesPage() {
       <ul
         className={`space-y-4 transition-opacity ${isLoading && data ? "opacity-60" : ""}`}
       >
-        {isLoading &&
-          !data &&
-          Array.from({ length: 3 }, (_, i) => (
-            <li
-              key={`skeleton-${i}`}
-              className="h-28 animate-pulse rounded-2xl border border-border-soft bg-surface"
-            />
-          ))}
+        {isLoading && !data && <SkeletonItems rows={3} className="h-28 rounded-2xl" />}
 
         {rows.map((quiz) => {
           const open = canSit(quiz, now);

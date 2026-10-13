@@ -8,6 +8,7 @@ import { QuizResultsPanel } from "../../_components/QuizResultsPanel";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { StatusPill } from "@/components/StatusPill";
 import { Button } from "@/components/ui/button";
+import { SkeletonPage } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { ApiError } from "@/lib/api/client";
 import {
@@ -49,8 +50,7 @@ export default function TeacherQuizDetailPage() {
     return (
       <div className="space-y-6">
         <BackLink />
-        <div className="h-40 animate-pulse rounded-2xl border border-border-soft bg-surface" />
-        <div className="h-64 animate-pulse rounded-2xl border border-border-soft bg-surface" />
+        <SkeletonPage />
       </div>
     );
   }

@@ -44,9 +44,11 @@ export async function api<T>(
   opts: RequestOptions = {},
 ): Promise<T> {
   const { body, auth = true, headers, ...rest } = opts;
+  // FormData goes as multipart — the browser sets the Content-Type with its boundary
+  const isForm = body instanceof FormData;
 
   const finalHeaders: Record<string, string> = {
-    "Content-Type": "application/json",
+    ...(isForm ? {} : { "Content-Type": "application/json" }),
     ...(headers as Record<string, string> | undefined),
   };
 
@@ -61,7 +63,7 @@ export async function api<T>(
     cache: "no-store",
     ...rest,
     headers: finalHeaders,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
     credentials: "include", // keep this — it's fine as long as backend echoes origin
     mode: "cors",
   });
@@ -80,6 +82,34 @@ export async function api<T>(
   }
 
   return data as T;
+}
+
+/**
+ * Downloads a protected file. A plain link can't carry the Authorization header, so this
+ * fetches it and hands the browser a temporary object URL to save.
+ */
+export async function downloadFile(path: string, fileName: string) {
+  const token = useAuthStore.getState().token;
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: "include",
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const isJson = res.headers.get("content-type")?.includes("application/json");
+    const data = isJson ? await res.json() : null;
+    if (res.status === 401) useAuthStore.getState().logout();
+    throw new ApiError(errorMessage(data, res.statusText), res.status);
+  }
+  const url = URL.createObjectURL(await res.blob());
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  // Give the browser a moment to start the download before letting go of the blob
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 // Backend errors look like { message }, { error: "ValidationError", issues } or { error }

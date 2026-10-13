@@ -6,6 +6,7 @@ import { useState } from "react";
 import { QuizRunner } from "../../_components/QuizRunner";
 import { StatusPill } from "@/components/StatusPill";
 import { Button } from "@/components/ui/button";
+import { SkeletonPage } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { quizzesApi, type MarkedAttempt } from "@/lib/api/quizzes";
 import { formatDateTime } from "@/lib/dates";
@@ -33,8 +34,7 @@ export default function StudentQuizPage() {
     return (
       <div className="space-y-6">
         <BackLink />
-        <div className="h-40 animate-pulse rounded-2xl border border-border-soft bg-surface" />
-        <div className="h-64 animate-pulse rounded-2xl border border-border-soft bg-surface" />
+        <SkeletonPage />
       </div>
     );
   }

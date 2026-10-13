@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { SkeletonItems } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { lessonsApi } from "@/lib/api/lessons";
+import { videoEmbedUrl, videoHost } from "@/lib/video";
 
 /** Published lessons only — the API withholds drafts from students. */
 export function LessonReader({ courseId }: { courseId: string }) {
@@ -38,13 +40,13 @@ export function LessonReader({ courseId }: { courseId: string }) {
       )}
 
       <ol className="divide-y divide-border-soft">
-        {isLoading &&
-          !data &&
-          Array.from({ length: 3 }, (_, i) => (
-            <li key={`skeleton-${i}`} className="p-5">
-              <div className="h-10 animate-pulse rounded-lg bg-field" />
-            </li>
-          ))}
+        {isLoading && !data && (
+          <SkeletonItems
+            rows={3}
+            itemClassName="p-5"
+            className="h-10 rounded-lg"
+          />
+        )}
 
         {lessons.map((lesson, index) => {
           const open = openId === lesson.id;
@@ -66,21 +68,29 @@ export function LessonReader({ courseId }: { courseId: string }) {
                 <span className="min-w-0 flex-1 text-sm font-medium text-ink">
                   {lesson.title}
                 </span>
+                {lesson.videoUrl && (
+                  <span className="shrink-0 rounded-full bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-600">
+                    ▶ Video
+                  </span>
+                )}
                 <span aria-hidden className="shrink-0 text-sub">
                   {open ? "▴" : "▾"}
                 </span>
               </button>
 
               {open && (
-                <div className="border-t border-border-soft bg-field/40 px-5 py-4">
+                <div className="space-y-4 border-t border-border-soft bg-field/40 px-5 py-4">
+                  {lesson.videoUrl && <LessonVideo link={lesson.videoUrl} title={lesson.title} />}
                   {lesson.content ? (
                     <p className="whitespace-pre-line text-sm leading-relaxed text-ink-soft">
                       {lesson.content}
                     </p>
                   ) : (
-                    <p className="text-sm italic text-sub">
-                      This lesson doesn&apos;t have any notes yet.
-                    </p>
+                    !lesson.videoUrl && (
+                      <p className="text-sm italic text-sub">
+                        This lesson doesn&apos;t have any notes yet.
+                      </p>
+                    )
                   )}
                 </div>
               )}
@@ -95,5 +105,34 @@ export function LessonReader({ courseId }: { courseId: string }) {
         )}
       </ol>
     </section>
+  );
+}
+
+function LessonVideo({ link, title }: { link: string; title: string }) {
+  const embed = videoEmbedUrl(link);
+  if (!embed) {
+    return (
+      <a
+        href={link}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 rounded-lg border border-border-soft bg-surface px-3 py-2 text-sm font-medium text-brand-indigo hover:border-brand-indigo/40"
+      >
+        ▶ Watch the video on {videoHost(link)}
+      </a>
+    );
+  }
+  return (
+    <div className="aspect-video w-full max-w-full overflow-hidden rounded-xl bg-black">
+      <iframe
+        src={embed}
+        title={`Video: ${title}`}
+        className="h-full w-full"
+        allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+        allowFullScreen
+        loading="lazy"
+        referrerPolicy="strict-origin-when-cross-origin"
+      />
+    </div>
   );
 }

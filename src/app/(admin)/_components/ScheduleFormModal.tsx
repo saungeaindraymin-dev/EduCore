@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SkeletonField } from "@/components/Skeleton";
 import { ApiError } from "@/lib/api/client";
 import { coursesApi, type Course } from "@/lib/api/courses";
 import { scheduleApi, type ScheduleEvent } from "@/lib/api/schedule";
@@ -105,6 +106,7 @@ export function ScheduleFormModal({
   if (event && !courses.some((c) => c.id === event.course.id)) {
     courseOptions.unshift(event.course);
   }
+  const coursesLoading = loadStatus === "loading" && courseOptions.length === 0;
   const teacherOptions: TeacherOption[] = [...teachers];
   const currentTeacher = event?.teacher;
   if (currentTeacher && !teachers.some((t) => t.id === currentTeacher.id)) {
@@ -219,25 +221,24 @@ export function ScheduleFormModal({
 
           <div className="space-y-2">
             <Label htmlFor="courseId">Course</Label>
-            <select
-              id="courseId"
-              {...register("courseId")}
-              aria-invalid={!!errors.courseId}
-              className={fieldClass}
-            >
-              <option value="">
-                {loadStatus === "loading" && courseOptions.length === 0
-                  ? "Loading courses…"
-                  : courseOptions.length
-                    ? "Select a course"
-                    : "No courses available"}
-              </option>
-              {courseOptions.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title} — {c.code}
+            <div className="relative" aria-busy={coursesLoading}>
+              <select
+                id="courseId"
+                {...register("courseId")}
+                aria-invalid={!!errors.courseId}
+                className={fieldClass}
+              >
+                <option value="">
+                  {courseOptions.length ? "Select a course" : "No courses available"}
                 </option>
-              ))}
-            </select>
+                {courseOptions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title} — {c.code}
+                  </option>
+                ))}
+              </select>
+              {coursesLoading && <SkeletonField className="absolute inset-0" />}
+            </div>
             {errors.courseId && (
               <p className="text-sm text-danger">{errors.courseId.message}</p>
             )}

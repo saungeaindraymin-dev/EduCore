@@ -6,6 +6,7 @@ import { useState } from "react";
 import { CourseWorkPanel } from "../../_components/CourseWorkPanel";
 import { LessonReader } from "../../_components/LessonReader";
 import { StatusPill } from "@/components/StatusPill";
+import { SkeletonItems, SkeletonPage } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { coursesApi } from "@/lib/api/courses";
 import { enrollmentsApi } from "@/lib/api/enrollments";
@@ -40,8 +41,7 @@ export default function StudentCourseDetailPage() {
     return (
       <div className="space-y-6">
         <BackLink />
-        <div className="h-40 animate-pulse rounded-2xl border border-border-soft bg-surface" />
-        <div className="h-64 animate-pulse rounded-2xl border border-border-soft bg-surface" />
+        <SkeletonPage />
       </div>
     );
   }
@@ -203,13 +203,13 @@ function CourseClasses({ courseId }: { courseId: string }) {
       )}
 
       <ul className="divide-y divide-border-soft">
-        {isLoading &&
-          !data &&
-          Array.from({ length: 3 }, (_, i) => (
-            <li key={`skeleton-${i}`} className="p-5">
-              <div className="h-12 animate-pulse rounded-lg bg-field" />
-            </li>
-          ))}
+        {isLoading && !data && (
+          <SkeletonItems
+            rows={3}
+            itemClassName="p-5"
+            className="h-12 rounded-lg"
+          />
+        )}
 
         {classes.map((event) => {
           const start = new Date(event.start);

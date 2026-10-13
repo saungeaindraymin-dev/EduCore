@@ -1,6 +1,7 @@
 "use client";
 
 import { StatusPill } from "@/components/StatusPill";
+import { SkeletonRows, SkeletonText } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { enrollmentsApi } from "@/lib/api/enrollments";
 import { initials } from "@/lib/utils";
@@ -19,7 +20,7 @@ export function CourseStudentsPanel({ courseId }: { courseId: string }) {
       <header className="border-b border-border-soft p-5">
         <h2 className="font-heading text-lg font-semibold text-ink">Students</h2>
         <p className="text-xs text-sub">
-          {data ? `${total} enrolled` : "Loading…"} · Enrollments are managed by an administrator.
+          {data ? `${total} enrolled` : <SkeletonText className="w-24" />} · Enrollments are managed by an administrator.
         </p>
       </header>
 
@@ -45,15 +46,7 @@ export function CourseStudentsPanel({ courseId }: { courseId: string }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-border-soft">
-            {isLoading &&
-              !data &&
-              Array.from({ length: 3 }, (_, i) => (
-                <tr key={`skeleton-${i}`}>
-                  <td colSpan={3} className="px-5 py-4">
-                    <div className="h-9 animate-pulse rounded-lg bg-field" />
-                  </td>
-                </tr>
-              ))}
+            {isLoading && !data && <SkeletonRows rows={3} columns={3} />}
             {rows.map((e) => (
               <tr key={e.id}>
                 <td className="px-5 py-3">

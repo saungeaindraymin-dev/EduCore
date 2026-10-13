@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { NavIcon } from "@/components/shell/NavIcon";
 import { StatusPill } from "@/components/StatusPill";
+import { SkeletonItems } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { assignmentsApi } from "@/lib/api/assignments";
 import { quizzesApi } from "@/lib/api/quizzes";
@@ -100,12 +101,13 @@ export function CourseWorkPanel({ courseId }: { courseId: string }) {
       )}
 
       <ul className="divide-y divide-border-soft">
-        {loading &&
-          Array.from({ length: 3 }, (_, i) => (
-            <li key={`skeleton-${i}`} className="p-5">
-              <div className="h-12 animate-pulse rounded-lg bg-field" />
-            </li>
-          ))}
+        {loading && (
+          <SkeletonItems
+            rows={3}
+            itemClassName="p-5"
+            className="h-12 rounded-lg"
+          />
+        )}
 
         {items.map((item) => {
           const overdue =

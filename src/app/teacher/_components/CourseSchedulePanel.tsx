@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SkeletonItems } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { scheduleApi } from "@/lib/api/schedule";
 import { addDays, formatTime, formatWeekday, isSameDay } from "@/lib/dates";
@@ -43,13 +44,13 @@ export function CourseSchedulePanel({ courseId }: { courseId: string }) {
       )}
 
       <ul className="divide-y divide-border-soft">
-        {isLoading &&
-          !data &&
-          Array.from({ length: 3 }, (_, i) => (
-            <li key={`skeleton-${i}`} className="p-5">
-              <div className="h-12 animate-pulse rounded-lg bg-field" />
-            </li>
-          ))}
+        {isLoading && !data && (
+          <SkeletonItems
+            rows={3}
+            itemClassName="p-5"
+            className="h-12 rounded-lg"
+          />
+        )}
         {classes.map((c) => {
           const start = new Date(c.start);
           const end = new Date(c.end);

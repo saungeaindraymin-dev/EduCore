@@ -6,6 +6,7 @@ import { useState } from "react";
 import { CourseFormModal } from "@/components/CourseFormModal";
 import { StatusPill } from "@/components/StatusPill";
 import { Button } from "@/components/ui/button";
+import { SkeletonPage } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { coursesApi } from "@/lib/api/courses";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -37,8 +38,7 @@ export default function TeacherCourseDetailPage() {
     return (
       <div className="space-y-6">
         <BackLink />
-        <div className="h-48 animate-pulse rounded-2xl border border-border-soft bg-surface" />
-        <div className="h-64 animate-pulse rounded-2xl border border-border-soft bg-surface" />
+        <SkeletonPage />
       </div>
     );
   }

@@ -79,6 +79,7 @@
   --color-border-soft: #e2e8f0;
   --color-border: #cbd5e1;
   --color-field: #f8fafc; /* input bg */
+  --color-skeleton: #e6eaf1; /* loading placeholder */
   --color-app: #f6f7fb; /* page bg */
   --color-surface: #ffffff; /* card bg */
 
@@ -175,6 +176,43 @@
   background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
   padding: 1px;
   border-radius: inherit;
+}
+
+/* ─────────── Loading placeholder ─────────── */
+/* The one loading look in EduCore: a soft block with a shimmer sweep across it.
+   Only <Skeleton> and friends in src/components/Skeleton.tsx apply this class —
+   every loading state is built from those, so they all look the same. It lives in
+   the components layer so a utility on the element — `absolute`, say — still wins. */
+@layer components {
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--color-skeleton);
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.75) 50%,
+      transparent 100%
+    );
+    animation: skeleton-sweep 1.5s var(--ease-in-out) infinite;
+  }
+  /* Sitting still is kinder than a sweep for anyone who asked for less motion */
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton::after {
+      animation: none;
+    }
+  }
+}
+@keyframes skeleton-sweep {
+  to {
+    transform: translateX(100%);
+  }
 }
 
 /* ─────────── Base ─────────── */

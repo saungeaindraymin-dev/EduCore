@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { StatusPill } from "@/components/StatusPill";
 import { NavIcon } from "@/components/shell/NavIcon";
+import { SkeletonItems, SkeletonText } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { coursesApi, type Course } from "@/lib/api/courses";
@@ -77,7 +78,7 @@ export default function StudentCoursesPage() {
           ))}
         </select>
         <span className="ml-auto text-sm text-sub">
-          {isLoading && !data ? "Loading…" : plural(rows.length, "course")}
+          {isLoading && !data ? <SkeletonText className="w-24" /> : plural(rows.length, "course")}
         </span>
       </div>
 
@@ -98,14 +99,7 @@ export default function StudentCoursesPage() {
           isLoading && data ? "opacity-60" : ""
         }`}
       >
-        {isLoading &&
-          !data &&
-          Array.from({ length: 6 }, (_, i) => (
-            <li
-              key={`skeleton-${i}`}
-              className="h-48 animate-pulse rounded-2xl border border-border-soft bg-surface"
-            />
-          ))}
+        {isLoading && !data && <SkeletonItems rows={6} className="h-48 rounded-2xl" />}
 
         {rows.map((enrollment) => {
           const course = detailsById.get(enrollment.course.id);

@@ -4,9 +4,11 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { StatusPill } from "@/components/StatusPill";
 import { Button } from "@/components/ui/button";
+import { SkeletonItems } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { ApiError } from "@/lib/api/client";
 import { lessonsApi, type Lesson } from "@/lib/api/lessons";
+import { videoHost } from "@/lib/video";
 import { LessonFormModal } from "./LessonFormModal";
 
 export function LessonsPanel({
@@ -99,13 +101,13 @@ export function LessonsPanel({
           busy || (isLoading && data) ? "opacity-60" : ""
         }`}
       >
-        {isLoading &&
-          !data &&
-          Array.from({ length: 3 }, (_, i) => (
-            <li key={`skeleton-${i}`} className="p-5">
-              <div className="h-12 animate-pulse rounded-lg bg-field" />
-            </li>
-          ))}
+        {isLoading && !data && (
+          <SkeletonItems
+            rows={3}
+            itemClassName="p-5"
+            className="h-12 rounded-lg"
+          />
+        )}
 
         {lessons.map((lesson, index) => (
           <li key={lesson.id} className="flex flex-wrap items-start gap-4 p-5 sm:flex-nowrap">
@@ -117,6 +119,16 @@ export function LessonsPanel({
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="font-medium text-ink">{lesson.title}</h3>
                 <StatusPill status={lesson.published ? "published" : "draft"} />
+                {lesson.videoUrl && (
+                  <a
+                    href={lesson.videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-semibold text-violet-600 hover:underline"
+                  >
+                    ▶ {videoHost(lesson.videoUrl)}
+                  </a>
+                )}
               </div>
               {lesson.content ? (
                 <p className="mt-1 line-clamp-2 whitespace-pre-line text-sm text-ink-soft">

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Pagination } from "@/components/Pagination";
 import { StatusPill } from "@/components/StatusPill";
 import { NavIcon } from "@/components/shell/NavIcon";
+import { SkeletonItems, SkeletonText } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { coursesApi, type CourseStatus } from "@/lib/api/courses";
@@ -77,7 +78,7 @@ export default function TeacherCoursesPage() {
           <option value="inactive">Inactive</option>
         </select>
         <span className="ml-auto text-sm text-sub">
-          {isLoading && !data ? "Loading…" : plural(total, "course")}
+          {isLoading && !data ? <SkeletonText className="w-24" /> : plural(total, "course")}
         </span>
       </div>
 
@@ -98,14 +99,7 @@ export default function TeacherCoursesPage() {
           isLoading && data ? "opacity-60" : ""
         }`}
       >
-        {isLoading &&
-          !data &&
-          Array.from({ length: 6 }, (_, i) => (
-            <li
-              key={`skeleton-${i}`}
-              className="h-48 animate-pulse rounded-2xl border border-border-soft bg-surface"
-            />
-          ))}
+        {isLoading && !data && <SkeletonItems rows={6} className="h-48 rounded-2xl" />}
 
         {rows.map((course) => (
           <li key={course.id}>

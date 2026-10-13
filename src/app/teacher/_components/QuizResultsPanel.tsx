@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { StatCard } from "@/components/StatCard";
 import { NavIcon } from "@/components/shell/NavIcon";
+import { SkeletonItems } from "@/components/Skeleton";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { quizzesApi } from "@/lib/api/quizzes";
 import { formatDateTime } from "@/lib/dates";
@@ -30,22 +31,28 @@ export function QuizResultsPanel({
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Attempts"
-          value={meta ? meta.attempts : "…"}
+          value={meta ? meta.attempts : "—"}
+          loading={isLoading && !meta}
           icon={<NavIcon name="check-badge" />}
         />
         <StatCard
           label="Students"
-          value={meta ? meta.students : "…"}
+          value={meta ? meta.students : "—"}
+          loading={isLoading && !meta}
           icon={<NavIcon name="user-group" />}
         />
         <StatCard
           label="Average"
-          value={meta?.averagePercentage === null ? "—" : `${meta?.averagePercentage ?? "…"}%`}
+          value={
+            meta?.averagePercentage == null ? "—" : `${meta.averagePercentage}%`
+          }
+          loading={isLoading && !meta}
           icon={<NavIcon name="grid" />}
         />
         <StatCard
           label="Passing (50%+)"
-          value={meta?.passRate === null ? "—" : `${meta?.passRate ?? "…"}%`}
+          value={meta?.passRate == null ? "—" : `${meta.passRate}%`}
+          loading={isLoading && !meta}
           icon={<NavIcon name="clipboard-check" />}
         />
       </div>
@@ -72,13 +79,13 @@ export function QuizResultsPanel({
         )}
 
         <ul className="divide-y divide-border-soft">
-          {isLoading &&
-            !data &&
-            Array.from({ length: 3 }, (_, i) => (
-              <li key={`skeleton-${i}`} className="p-5">
-                <div className="h-10 animate-pulse rounded-lg bg-field" />
-              </li>
-            ))}
+          {isLoading && !data && (
+            <SkeletonItems
+              rows={3}
+              itemClassName="p-5"
+              className="h-10 rounded-lg"
+            />
+          )}
 
           {attempts.map((attempt) => {
             const open = expanded === attempt.id;

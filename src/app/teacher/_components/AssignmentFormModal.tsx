@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SkeletonField } from "@/components/Skeleton";
 import {
   ASSIGNMENT_STATUSES,
   ASSIGNMENT_STATUS_LABELS,
@@ -77,6 +78,8 @@ export function AssignmentFormModal({
 }) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // The course list has landed (empty or not) — so an empty list never reads as "loading"
+  const [loaded, setLoaded] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -93,6 +96,9 @@ export function AssignmentFormModal({
       .catch((err) => {
         if (cancelled) return;
         setLoadError(err instanceof ApiError ? err.message : "Could not load your courses");
+      })
+      .finally(() => {
+        if (!cancelled) setLoaded(true);
       });
     return () => {
       cancelled = true;
@@ -101,6 +107,7 @@ export function AssignmentFormModal({
 
   // Keep the current course selectable before the list loads
   const options: { id: string; title: string; code: string }[] = [...courses];
+  const coursesLoading = !loaded && courses.length === 0;
   if (assignment && !courses.some((c) => c.id === assignment.course.id)) {
     options.unshift(assignment.course);
   }
@@ -184,22 +191,25 @@ export function AssignmentFormModal({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="courseId">Course</Label>
-              <select
-                id="courseId"
-                {...register("courseId")}
-                disabled={!!assignment}
-                aria-invalid={!!errors.courseId}
-                className={`${fieldClass} disabled:opacity-60`}
-              >
-                <option value="">
-                  {options.length ? "Select a course" : "Loading your courses…"}
-                </option>
-                {options.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title} — {c.code}
+              <div className="relative" aria-busy={coursesLoading}>
+                <select
+                  id="courseId"
+                  {...register("courseId")}
+                  disabled={!!assignment}
+                  aria-invalid={!!errors.courseId}
+                  className={`${fieldClass} disabled:opacity-60`}
+                >
+                  <option value="">
+                    {options.length ? "Select a course" : "No courses yet"}
                   </option>
-                ))}
-              </select>
+                  {options.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title} — {c.code}
+                    </option>
+                  ))}
+                </select>
+                {coursesLoading && <SkeletonField className="absolute inset-0" />}
+              </div>
               {assignment && (
                 <p className="text-xs text-sub">
                   An assignment stays with its course.
@@ -210,7 +220,10 @@ export function AssignmentFormModal({
                   {loadError}.{" "}
                   <button
                     type="button"
-                    onClick={() => setReloadKey((k) => k + 1)}
+                    onClick={() => {
+                      setLoaded(false);
+                      setReloadKey((k) => k + 1);
+                    }}
                     className="font-medium underline"
                   >
                     Retry

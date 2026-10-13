@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SkeletonField } from "@/components/Skeleton";
 import { ApiError } from "@/lib/api/client";
 import { coursesApi, type Course } from "@/lib/api/courses";
 import { QUIZ_STATUSES, quizzesApi, type Quiz } from "@/lib/api/quizzes";
@@ -78,6 +79,8 @@ export function QuizFormModal({
 }) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // The course list has landed (empty or not) — so an empty list never reads as "loading"
+  const [loaded, setLoaded] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -94,6 +97,9 @@ export function QuizFormModal({
       .catch((err) => {
         if (cancelled) return;
         setLoadError(err instanceof ApiError ? err.message : "Could not load your courses");
+      })
+      .finally(() => {
+        if (!cancelled) setLoaded(true);
       });
     return () => {
       cancelled = true;
@@ -102,6 +108,7 @@ export function QuizFormModal({
 
   const options: { id: string; title: string; code: string }[] = [...courses];
   if (quiz && !courses.some((c) => c.id === quiz.course.id)) options.unshift(quiz.course);
+  const coursesLoading = !loaded && courses.length === 0;
 
   const {
     register,
@@ -185,28 +192,34 @@ export function QuizFormModal({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="courseId">Course</Label>
-              <select
-                id="courseId"
-                {...register("courseId")}
-                disabled={!!quiz}
-                aria-invalid={!!errors.courseId}
-                className={`${fieldClass} disabled:opacity-60`}
-              >
-                <option value="">
-                  {options.length ? "Select a course" : "Loading your courses…"}
-                </option>
-                {options.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title} — {c.code}
+              <div className="relative" aria-busy={coursesLoading}>
+                <select
+                  id="courseId"
+                  {...register("courseId")}
+                  disabled={!!quiz}
+                  aria-invalid={!!errors.courseId}
+                  className={`${fieldClass} disabled:opacity-60`}
+                >
+                  <option value="">
+                    {options.length ? "Select a course" : "No courses yet"}
                   </option>
-                ))}
-              </select>
+                  {options.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title} — {c.code}
+                    </option>
+                  ))}
+                </select>
+                {coursesLoading && <SkeletonField className="absolute inset-0" />}
+              </div>
               {loadError && (
                 <p role="alert" className="text-sm text-danger">
                   {loadError}.{" "}
                   <button
                     type="button"
-                    onClick={() => setReloadKey((k) => k + 1)}
+                    onClick={() => {
+                      setLoaded(false);
+                      setReloadKey((k) => k + 1);
+                    }}
                     className="font-medium underline"
                   >
                     Retry
