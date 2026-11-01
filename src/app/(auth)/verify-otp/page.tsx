@@ -10,12 +10,20 @@ import { ApiError } from "@/lib/api/client";
 const LENGTH = 6;
 const RESEND_SECONDS = 30;
 
+/** Spread a code across the six boxes; a short or missing code leaves them blank. */
+const spread = (code: string) =>
+  Array.from({ length: LENGTH }, (_, i) => code[i] ?? "");
+
 function VerifyOtpInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const email = params.get("email") ?? "your email";
+  const email = params.get("email") ?? "";
+  // Development only: with no mail provider configured the API returns the code
+  // itself, and forgot-password passes it along so the boxes come pre-filled.
+  const devCode = params.get("dev") ?? "";
 
-  const [digits, setDigits] = useState<string[]>(Array(LENGTH).fill(""));
+  const [digits, setDigits] = useState<string[]>(() => spread(devCode));
+  const [noMail, setNoMail] = useState(Boolean(devCode));
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [cooldown, setCooldown] = useState(RESEND_SECONDS);
@@ -93,12 +101,37 @@ function VerifyOtpInner() {
   const resend = async () => {
     if (cooldown > 0) return;
     try {
-      await authApi.forgotPassword(email);
+      const res = await authApi.forgotPassword(email);
+      if (res.devCode) {
+        setDigits(spread(res.devCode));
+        setNoMail(true);
+      }
       setCooldown(RESEND_SECONDS);
-    } catch {
-      setError("Could not resend code");
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "Could not resend code",
+      );
     }
   };
+
+  if (!email) {
+    return (
+      <div className="text-center">
+        <h1 className="font-heading text-2xl font-bold">
+          Which email should we check?
+        </h1>
+        <p className="mt-2 text-sm text-[#64748B]">
+          Start the reset again so we know where to send your code.
+        </p>
+        <Link
+          href="/forgot-password"
+          className="mt-6 inline-block font-semibold text-[#6366F1] hover:underline"
+        >
+          Back to forgot password
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -109,6 +142,17 @@ function VerifyOtpInner() {
           <span className="font-medium text-[#0F172A]">{email}</span>.
         </p>
       </header>
+
+      {noMail && (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-semibold">No mail provider configured</p>
+          <p className="mt-1">
+            This server isn&apos;t sending email, so the code has been filled in
+            for you. Set <code className="font-mono">SMTP_*</code> in the API&apos;s{" "}
+            <code className="font-mono">.env</code> to deliver it for real.
+          </p>
+        </div>
+      )}
 
       <form onSubmit={onSubmit} className="space-y-6">
         <div className="flex justify-between gap-2">
@@ -141,7 +185,7 @@ function VerifyOtpInner() {
         </Button>
 
         <div className="text-center text-sm text-[#64748B]">
-          Didn't receive the code?{" "}
+          Didn&apos;t receive the code?{" "}
           <button
             type="button"
             onClick={resend}

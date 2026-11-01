@@ -14,8 +14,7 @@ export function RequireRole({
 }) {
   const router = useRouter();
   const { isAuthenticated, user } = useAuthStore();
-  // Wait for the persisted session to load, otherwise a page refresh
-  // sees the empty initial state and bounces to /login.
+
   const hydrated = useSyncExternalStore(
     (onChange) => useAuthStore.persist.onFinishHydration(onChange),
     () => useAuthStore.persist.hasHydrated(),

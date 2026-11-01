@@ -128,16 +128,6 @@ export default function LoginPage() {
           {isSubmitting ? "Signing in…" : "Sign in"}
         </Button>
       </form>
-
-      <p className="mt-8 text-center text-sm text-[#64748B]">
-        Don't have an account?{" "}
-        <Link
-          href="/signup"
-          className="font-semibold text-[#6366F1] hover:underline"
-        >
-          Sign up
-        </Link>
-      </p>
     </div>
   );
 }

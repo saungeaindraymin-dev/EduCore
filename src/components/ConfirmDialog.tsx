@@ -18,6 +18,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel = "Delete",
+  pendingLabel = "Deleting…",
   onConfirm,
 }: {
   open: boolean;
@@ -25,6 +26,8 @@ export function ConfirmDialog({
   title: string;
   description: React.ReactNode;
   confirmLabel?: string;
+  /** Shown on the confirm button while it runs — "Deleting…" doesn't fit every action. */
+  pendingLabel?: string;
   onConfirm: () => Promise<void>;
 }) {
   const [pending, setPending] = useState(false);
@@ -81,7 +84,7 @@ export function ConfirmDialog({
             disabled={pending}
             className="bg-danger text-white hover:bg-danger/90"
           >
-            {pending ? "Deleting…" : confirmLabel}
+            {pending ? pendingLabel : confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

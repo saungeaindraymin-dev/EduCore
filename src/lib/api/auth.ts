@@ -13,6 +13,20 @@ export type User = {
   updatedAt: string;
 };
 
+/**
+ * The API only fills in the fields below when the server has no mail provider
+ * configured, which it allows in development only. They let the reset flow be
+ * completed in the browser with no inbox; in production only `ok` comes back.
+ */
+export type ForgotPasswordResult = {
+  ok: boolean;
+  message?: string;
+  devCode?: string;
+  mailMode?: "smtp" | "log" | "ethereal";
+  outboxPath?: string;
+  previewUrl?: string;
+};
+
 export const authApi = {
   login: (email: string, password: string) =>
     api<{ token: string; user: User }>("/auth/login", {
@@ -34,7 +48,7 @@ export const authApi = {
     }),
 
   forgotPassword: (email: string) =>
-    api<{ ok: boolean }>("/auth/forgot-password", {
+    api<ForgotPasswordResult>("/auth/forgot-password", {
       method: "POST",
       body: { email },
       auth: false,

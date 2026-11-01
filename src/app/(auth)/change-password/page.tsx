@@ -93,7 +93,7 @@ function ChangePasswordInner() {
       <header className="mb-8">
         <h1 className="font-heading text-3xl font-bold">Set a new password</h1>
         <p className="mt-2 text-sm text-[#64748B]">
-          Choose a strong password you don't use anywhere else.
+          Choose a strong password you don&apos;t use anywhere else.
         </p>
       </header>
 

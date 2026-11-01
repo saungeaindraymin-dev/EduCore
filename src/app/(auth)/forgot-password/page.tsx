@@ -34,10 +34,15 @@ export default function ForgotPasswordPage() {
   const onSubmit = async (data: ForgotPasswordInput) => {
     setServerError(null);
     try {
-      await authApi.forgotPassword(data.email);
+      const res = await authApi.forgotPassword(data.email);
       setSent(true);
+      // In development the server may hand the code back instead of emailing it;
+      // carry it over so the next screen can fill it in.
+      const dev = res.devCode ? `&dev=${res.devCode}` : "";
       setTimeout(() => {
-        router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
+        router.push(
+          `/verify-otp?email=${encodeURIComponent(data.email)}${dev}`,
+        );
       }, 900);
     } catch (err) {
       setServerError(
@@ -50,7 +55,7 @@ export default function ForgotPasswordPage() {
       <header className="mb-8">
         <h1 className="font-heading text-3xl font-bold">Forgot password?</h1>
         <p className="mt-2 text-sm text-[#64748B]">
-          Enter your email and we'll send you a 6-digit code to reset your
+          Enter your email and we&apos;ll send you a 6-digit code to reset your
           password.
         </p>
       </header>
@@ -69,6 +74,12 @@ export default function ForgotPasswordPage() {
             <p className="text-sm text-red-600">{errors.email.message}</p>
           )}
         </div>
+
+        {serverError && (
+          <p role="alert" className="text-sm text-red-600">
+            {serverError}
+          </p>
+        )}
 
         <Button
           type="submit"

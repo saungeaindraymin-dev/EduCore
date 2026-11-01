@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { SkeletonStack } from "@/components/Skeleton";
 import type { NavItem } from "@/lib/api/access";
 import { initials } from "@/lib/utils";
@@ -28,6 +29,7 @@ export function Sidebar({
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const [signOutOpen, setSignOutOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -38,7 +40,7 @@ export function Sidebar({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  function handleSignOut() {
+  async function handleSignOut() {
     logout();
     router.replace("/login");
   }
@@ -162,7 +164,7 @@ export function Sidebar({
             </div>
             <button
               type="button"
-              onClick={handleSignOut}
+              onClick={() => setSignOutOpen(true)}
               aria-label="Sign out"
               title="Sign out"
               className="rounded-lg p-2 text-sub transition hover:bg-danger-bg hover:text-danger"
@@ -172,6 +174,16 @@ export function Sidebar({
           </div>
         </div>
       </aside>
+
+      <ConfirmDialog
+        open={signOutOpen}
+        onOpenChange={setSignOutOpen}
+        title="Sign out?"
+        confirmLabel="Sign out"
+        pendingLabel="Signing out…"
+        description="You'll be taken back to the sign-in page and will need your password to come back."
+        onConfirm={handleSignOut}
+      />
     </>
   );
 }
